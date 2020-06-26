@@ -122,11 +122,12 @@ class dbConnection {
                 $this->res_data = Array();
                 while ($row = mysqli_fetch_row($result)) {
                     $this->res_data[] = $row;
-                }
-                $res = $this->res_data;
+                }                
                 mysqli_free_result($result);
-                print("---");
-                print_r($this->res_data);
+                $res = $this->res_data;
+                //print("---");
+                //print_r($this->res_data);
+                
                 @$this->res_errMsg       = mysqli_error($this->res_data);
                 @$this->res_affectedRows = mysqli_affected_rows($this->res_data);
                 @$this->res_rowCount     = mysqli_num_rows($this->res_data);
@@ -157,8 +158,90 @@ class dbConnection {
         }
         // restore errors
         ini_set('display_errors', $ini_err);
-
+        //print_r($res);
         return $res;
+    }
+
+
+// NEW! Makes new method GetFieldNames() only for fields names
+    public function GetFieldNames($sql) {
+        // hide errors
+        $ini_err = ini_get('display_errors');
+        ini_set('display_errors', 0);
+        $res = false;
+
+        $this->res_errMsg = null;
+
+        // --- process for postgres sql (NOT tested)
+        if ($this->dbType == 'postgres') {
+            $this->res_data = pg_query($this->dbConn, $sql);
+            if (!$this->res_data) {
+                $this->res_errMsg       = pg_last_error($this->dbConn);
+            } else {
+                $this->res_errMsg       = pg_result_error($this->res_data);
+                $this->res_affectedRows = pg_affected_rows($this->res_data);
+                $this->res_rowCount     = pg_num_rows($this->res_data);
+                $this->res_fieldCount   = pg_num_fields($this->res_data);
+                $res = new dbRecordSet($this->dbType, $this->res_data, $this->res_rowCount, $this->res_fieldCount);
+                // -- parse field names
+                for ($i=0; $i<$this->res_fieldCount; $i++) {
+                    $this->res_fields[$i] = pg_field_name($this->res_data, $i);
+                    $this->res_fieldsInfo[$i] = Array();
+                    $this->res_fieldsInfo[$i]['type']    = pg_field_type($this->res_data, $i);;
+                    $this->res_fieldsInfo[$i]['len']     = pg_field_size($this->res_data, $i);;
+                    $this->res_fieldsInfo[$i]['is_null'] = pg_field_is_null($this->res_data, $i);;
+                    $this->res_fieldsInfo[$i]['prt_len'] = pg_field_prtlen($this->res_data, $i);;
+                }
+            }
+            // log error
+            if ($this->res_errMsg != '') {
+                // put here code to log error
+            }
+        }
+
+        // --- mysql (tested)
+        if ($this->dbType == 'mysql') {
+            // connect to db and get data
+            $result = mysqli_query($this->dbConn, $sql);
+            if (!$result) {
+                $this->res_errMsg       = mysqli_error($this->dbConn);
+            } else {                
+                //put fieldnames in array
+                $fieldnames = Array();
+                $fieldnames = $result->fetch_fields();
+                for ($i=1; $i < count($fieldnames); $i++){$flname[$i] = $fieldnames[$i]->name;}
+                }
+                mysqli_free_result($result);
+                /* тут очень круто, но я вообще ничего не понял, mysqli_field_type() - не работает               
+                @$this->res_errMsg       = mysqli_error($this->res_data);
+                @$this->res_affectedRows = mysqli_affected_rows($this->res_data);
+                @$this->res_rowCount     = mysqli_num_rows($this->res_data);
+                @$this->res_fieldCount   = mysqli_num_fields($this->res_data);
+                // @$res = new dbRecordSet($this->dbType, $this->res_data, $this->res_rowCount, $this->res_fieldCount);
+                // -- parse field names
+                // for ($i=0; $i<$this->res_fieldCount; $i++) {
+                //     $this->res_fields[$i] = mysqli_field_name($this->res_data, $i);
+                //     $this->res_fieldsInfo[$i] = Array();
+                //     $this->res_fieldsInfo[$i]['type']  = mysqli_field_type($this->res_data, $i);;
+                //     $this->res_fieldsInfo[$i]['len']   = mysqli_field_len($this->res_data, $i);;
+                //     $this->res_fieldsInfo[$i]['flags'] = mysqli_field_flags($this->res_data, $i);;
+                // }*/
+            //}
+            // log error
+            if ($this->res_errMsg != '') {
+                // put here code to log error
+            }
+        }
+        $this->res_sql = $sql;
+        // show debug info if on
+        if ($this->debug == true) {
+            print("<pre>".$sql."<hr>");
+            if ($this->res_errMsg != '') print("<span style='color: red'>".$this->res_errMsg."</span><hr>");
+            print("</pre>");
+        }
+        // restore errors
+        ini_set('display_errors', $ini_err);
+        return $flname;
     }
 
     // -- Return all records as an Array
@@ -274,7 +357,6 @@ class dbRecordSet {
             $this->fields = mysql_fetch_array($this->data);
         }
     }
-
     public function movePrevious() {
         if ($this->dbType == 'postgres') {
             if ($this->current == 0) { return; }

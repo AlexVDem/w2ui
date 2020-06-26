@@ -1,33 +1,51 @@
+
+
+<!-- !!!!!!!!! This code tested only on PHP7 and MySQL ('MadiaDB') !!!!!!!!! 
+Be adviced, w2ui-1.5.rc1.min.css, jquery-3.1.1.min.js, w2ui-1.5.rc1.min.js is local new versions files in links below
+-->
+
+
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="../../dist/w2ui.min.css" />
-    <script type="text/javascript" src="../../libs/jquery/jquery-2.1.4.min.js"></script>
-    <script type="text/javascript" src="../../dist/w2ui.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../dist/w2ui-1.5.rc1.min.css" />
+    <script type="text/javascript" src="../../libs/jquery/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="../../dist/w2ui-1.5.rc1.min.js"></script>
 </head>
 <body>
     <div id="users" style="width: 100%; height: 600px;"></div>
 </body>
 <script>
+
+//NEW! Put this JSON data type to declare new data format for 1.5 w2ui
+w2utils.settings.dataType = 'JSON';
 $(function () {
     // define and render grid
     $('#users').w2grid({
         name    : 'users',
-        url     : 'users.php',
+        limit     : 50,
+        //url     : 'users.php',
         header  : 'List of Users',
+        url: {
+  			get: 'users.php',
+   			save: 'users.php',
+   			remove: 'users.php'
+		},
         show: {
             header        : true,
             toolbar       : true,
             footer        : true,
             toolbarAdd    : true,
             toolbarDelete : true
-        },
+        },        
         columns: [
-            { field: 'fname', caption: 'First Name', size: '150px', searchable: true },
-            { field: 'lname', caption: 'Last Name', size: '150px', searchable: true },
-            { field: 'email', caption: 'Email', size: '100%', searchable: true },
-            { field: 'login', caption: 'Login', size: '150px', searchable: true }
+            { field: 'fname', caption: 'First Name', size: '150px', searchable: true, sortable: true },
+            { field: 'lname', caption: 'Last Name', size: '150px', searchable: true, sortable: true },
+            { field: 'email', caption: 'Email', size: '100%', searchable: true, sortable: true },
+            { field: 'login', caption: 'Login', size: '150px', searchable: true, sortable: true },
+            { field: 'password', caption: 'Password', size: '150px', searchable: false }
         ],
+
         onAdd: function (event) {
             editUser(0);
         },
@@ -65,8 +83,8 @@ $(function () {
             '    </div>'+
             '</div>'+
             '<div class="w2ui-buttons">'+
-            '    <input type="button" value="Cancel" name="cancel">'+
             '    <input type="button" value="Save" name="save">'+
+            '    <input type="button" value="Cancel" name="cancel">'+            
             '</div>',
         fields: [
             { name: 'fname', type: 'text', required: true },

@@ -107,12 +107,13 @@ class w2grid_class {
 
         // count records
         $rs = $db->execute($cql);
+        
         $data['status'] = 'success';
-        $data['total']  = $rs->fields[0];
+        //$data['total']  = $rs->fields[0];
+        $data['total']  = $rs[0][0];
 
-        // execute sql
-            $rs = $db->execute($sql);
-        //print($sql);
+        // execute sql, get records to $rs
+        $rs = $db->execute($sql);       
 
         // check for error
         if ($db->res_errMsg != '') {
@@ -121,19 +122,27 @@ class w2grid_class {
             $data['message'] = $db->res_errMsg;
             return $data;
         }
+       
+        // NEW! execute new GetFieldNames($sql) method, get fields names to $rsf
+        $rsf = $db->GetFieldNames($sql);
+        //print_r($rsf);
         $data['records'] = array();
-
         $len = 0;
-        while($rs && !$rs->EOF) {
+        while($len < $data['total']) {
             $data['records'][$len] = Array();
-            $data['records'][$len]['recid'] = $rs->fields[0];
-            foreach ($rs->fields as $k => $v) {
-                if (intval($k) > 0 || $k == "0") continue;
-                $data['records'][$len][$k] = $v;
+            // remove old function, we don't need it anymore
+            //$data['records'][$len]['recid'] = $rs->fields[0];
+            foreach ($rsf as $k => $v) {
+                //if (intval($k) > 0 || $k == "0") continue;
+                
+                $data['records'][$len]['recid'] = $rs[$len][0];
+                $data['records'][$len][$v] = $rs[$len][$k];
             }
             $len++;
-            $rs->moveNext();
+            // remove old function, we don't need it anymore
+            //$rs->moveNext();
         }
+        unset($len,$v,$k,$rsf,$rs,$sql,$cql);
         return $data;
     }
 
@@ -162,7 +171,6 @@ class w2grid_class {
     public function getRecord($sql) {
         global $db;
         $data = Array();
-
         // execute sql
         $rs = $db->execute($sql);
         // check for error
@@ -172,16 +180,12 @@ class w2grid_class {
             $data['message'] = $db->res_errMsg;
             return $data;
         }
-
+        // NEW! execute new GetFieldNames($sql) method, get fields names to to $rsf
+        $rsf = $db->GetFieldNames($sql);
+        //print_r($rsf);
         $data['status'] = 'success';
-        $data['record']    = Array();
-        while ($rs && !$rs->EOF) {
-            foreach ($rs->fields as $k => $v) {
-                if (intval($k) > 0 || $k == "0") continue;
-                $data['record'][$k] = $v;
-            }
-            break;
-        }
+        $data['record'] = Array();
+        foreach ($rsf as $k => $v) {$data['record'][$v] = $rs[0][$k];}
         return $data;
     }
 
